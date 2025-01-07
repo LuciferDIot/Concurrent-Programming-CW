@@ -1,4 +1,3 @@
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,8 +49,7 @@ public class TransactionSystem {
                 if (fromAccount.getBalance() >= amount) {
                     fromAccount.withdraw(amount);
                     toAccount.deposit(amount);
-                    System.out.println("Transferred " + amount + " from account " + fromAccountId +
-                            " to account " + toAccountId);
+                    System.out.println("Transferred " + amount + " from account " + fromAccountId + " to account " + toAccountId);
                 } else {
                     throw new IllegalArgumentException("Insufficient balance in the source account");
                 }
@@ -79,8 +77,7 @@ public class TransactionSystem {
             synchronized (secondLock) {
                 toAccount.withdraw(amount);
                 fromAccount.deposit(amount);
-                System.out.println("Reversed transaction of " + amount + " from account " + toAccountId +
-                        " to account " + fromAccountId);
+                System.out.println("Reversed transaction of " + amount + " from account " + toAccountId + " to account " + fromAccountId);
             }
         }
     }
