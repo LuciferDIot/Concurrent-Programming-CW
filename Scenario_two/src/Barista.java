@@ -1,4 +1,3 @@
-package CoffeeShop;
 
 /**
  * Represents a barista who prepares orders from the queue.

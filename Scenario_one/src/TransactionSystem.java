@@ -1,4 +1,3 @@
-package Bank;
 
 import java.util.HashMap;
 import java.util.Map;

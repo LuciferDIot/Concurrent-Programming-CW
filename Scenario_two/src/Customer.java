@@ -1,4 +1,3 @@
-package CoffeeShop;
 
 /**
  * Represents a customer who places orders in the coffee shop.

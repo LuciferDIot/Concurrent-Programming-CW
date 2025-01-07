@@ -1,4 +1,3 @@
-package CoffeeShop;
 
 /**
  * Main class to simulate the coffee shop scenario.

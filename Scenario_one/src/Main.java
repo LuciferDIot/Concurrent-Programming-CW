@@ -1,4 +1,3 @@
-package Bank;
 
 /**
  * The entry point of the program.
