@@ -1,4 +1,3 @@
-
 /**
  * Main class to simulate the coffee shop scenario.
  *
@@ -13,7 +12,7 @@
 public class CoffeeShopExample {
     public static void main(String[] args) {
         // Step 1: Create a coffee shop with a maximum of 5 orders in the queue.
-        CoffeeShop coffeeShop = new CoffeeShop(5);
+        CoffeeShop coffeeShop = new CoffeeShop(3);
 
         // Step 2: Create and start multiple customer threads.
         // Each customer places an order in the queue.
