@@ -1,3 +1,5 @@
+import java.util.Random;
+
 /**
  * Represents a customer who places orders in the coffee shop.
  *
@@ -10,8 +12,9 @@
  * - Handle `InterruptedException` to ensure threads can be interrupted gracefully.
  */
 public class Customer implements Runnable {
-    private CoffeeShop coffeeShop;
-    private String order;
+    private final CoffeeShop coffeeShop;
+    private final String order;
+    private final Random random = new Random();
 
     /**
      * Constructor to initialize the customer with a coffee shop and an order.
