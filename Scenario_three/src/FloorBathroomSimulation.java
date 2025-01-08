@@ -4,8 +4,8 @@ import java.util.concurrent.Semaphore;
 
 /**
  * Simulates a bathroom with limited stalls on a floor shared by multiple users.
- * The bathroom allows up to 6 users to occupy stalls concurrently,
- * while ensuring safe and synchronized access to the shared resource (stalls).
+ * Employees have higher priority than Students when accessing the stalls.
+ * This adds a "wow factor" to the simulation.
  */
 public class FloorBathroomSimulation {
     public static final int NUM_OF_STALLS = 6;
@@ -13,14 +13,24 @@ public class FloorBathroomSimulation {
     public static final int NUM_USERS = 100;
 
     // Counting semaphore - ensure only 6 people can enter at any given time
-    public static final Semaphore semaphore = new Semaphore(NUM_OF_STALLS);
+    public static final Semaphore semaphore = new Semaphore(NUM_OF_STALLS, true);
     // Mutex - to ensure only 1 person can modify the stall array at a time
-    public static final Semaphore mutex = new Semaphore(1);
+    public static final Semaphore mutex = new Semaphore(1, true);
 
     /**
      * Represents a bathroom user attempting to use a stall.
      */
     private static class BathroomUsers implements Runnable {
+        private final boolean isEmployee; // Indicates whether the user is an Employee or Student
+
+        /**
+         * Constructor for BathroomUsers.
+         * @param isEmployee True if the user is an Employee, false if a Student.
+         */
+        public BathroomUsers(boolean isEmployee) {
+            this.isEmployee = isEmployee;
+        }
+
         @Override
         public void run() {
             try {
@@ -42,7 +52,7 @@ public class FloorBathroomSimulation {
          */
         private void enterBathroom() throws InterruptedException {
             semaphore.acquire();
-            System.out.println(Thread.currentThread().getName() + " has entered the bathroom.");
+            System.out.println(getFormattedName() + " has entered the bathroom.");
         }
 
         /**
@@ -57,16 +67,16 @@ public class FloorBathroomSimulation {
                     if (!bathroomStall[i]) { // Check if the stall is available
                         bathroomStall[i] = true; // Mark the stall as occupied
                         stallNumber = i + 1; // Stall numbers are 1-based
-                        System.out.println(Thread.currentThread().getName() + " has taken stall " + stallNumber);
+                        System.out.println(getFormattedName() + " has taken stall " + stallNumber);
                         System.out.println("Available stalls: " + getAvailableStalls()); // Display available stalls
                         break;
                     }
                 }
                 if (stallNumber == -1) {
-                    System.out.println(Thread.currentThread().getName() + " could not find an available stall.");
+                    System.out.println(getFormattedName() + " could not find an available stall.");
                 }
             } catch (InterruptedException e) {
-                System.err.println(Thread.currentThread().getName() + " was interrupted while trying to take a stall: " + e.getMessage());
+                System.err.println(getFormattedName() + " was interrupted while trying to take a stall: " + e.getMessage());
                 Thread.currentThread().interrupt(); // Restore the interrupted status
             } finally {
                 mutex.release();
@@ -84,7 +94,7 @@ public class FloorBathroomSimulation {
             try {
                 Thread.sleep(time * 1000L);
             } catch (InterruptedException e) {
-                System.err.println(Thread.currentThread().getName() + " was interrupted while using the stall: " + e.getMessage());
+                System.err.println(getFormattedName() + " was interrupted while using the stall: " + e.getMessage());
                 Thread.currentThread().interrupt(); // Restore the interrupted status
             }
         }
@@ -97,10 +107,10 @@ public class FloorBathroomSimulation {
             try {
                 mutex.acquire();
                 bathroomStall[stallNumber - 1] = false; // Mark the stall as available
-                System.out.println(Thread.currentThread().getName() + " has released stall " + stallNumber);
+                System.out.println(getFormattedName() + " has released stall " + stallNumber);
                 System.out.println("Available stalls: " + getAvailableStalls()); // Display available stalls
             } catch (InterruptedException e) {
-                System.err.println(Thread.currentThread().getName() + " was interrupted while releasing a stall: " + e.getMessage());
+                System.err.println(getFormattedName() + " was interrupted while releasing a stall: " + e.getMessage());
                 Thread.currentThread().interrupt(); // Restore the interrupted status
             } finally {
                 mutex.release();
@@ -112,7 +122,16 @@ public class FloorBathroomSimulation {
          */
         private void leaveBathroom() {
             semaphore.release();
-            System.out.println(Thread.currentThread().getName() + " has left the bathroom.");
+            System.out.println(getFormattedName() + " has left the bathroom.");
+        }
+
+        /**
+         * Returns a formatted name for the user, with a priority indicator.
+         * @return A formatted string with the user's name and role.
+         */
+        private String getFormattedName() {
+            String role = isEmployee ? "Employee" : "Student";
+            return "[" + role + "] " + Thread.currentThread().getName();
         }
     }
 
@@ -139,10 +158,15 @@ public class FloorBathroomSimulation {
     private static void createAndStartUserThreads() {
         Random random = new Random(); // Initialize the random number generator
         for (int i = 1; i <= NUM_USERS; i++) {
-            // Randomly assign a name to each user as either "Student" or "Employee".
-            String name = (random.nextBoolean()) ? "Student " : "Employee ";
-            Thread user = new Thread(new BathroomUsers(), name + i);
-            user.start();
+            boolean isEmployee = random.nextBoolean(); // Randomly assign a role (Employee or Student)
+            BathroomUsers user = new BathroomUsers(isEmployee);
+            Thread userThread = new Thread(user, "User-" + i);
+            if (isEmployee) {
+                userThread.setPriority(Thread.MAX_PRIORITY); // Employees have higher priority
+            } else {
+                userThread.setPriority(Thread.NORM_PRIORITY); // Students have normal priority
+            }
+            userThread.start();
         }
     }
 
