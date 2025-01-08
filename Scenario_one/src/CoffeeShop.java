@@ -1,18 +1,25 @@
 import java.util.Queue;
 import java.util.LinkedList;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.Condition;
 
 /**
  * Represents the coffee shop with a shared order queue.
- * This class ensures thread-safe access to the queue using `synchronized` blocks.
+ * This class ensures thread-safe access to the queue using `ReentrantLock` and `Condition`.
  *
  * Best Practices:
- * - Use `synchronized` blocks to ensure mutual exclusion when accessing shared resources.
- * - Use `wait()` and `notifyAll()` for thread coordination.
- * - Keep the critical section (code inside `synchronized`) as short as possible to minimize contention.
+ * - Use `ReentrantLock` for mutual exclusion when accessing shared resources.
+ * - Use `Condition` for thread coordination (wait/notify mechanism).
+ * - Keep the critical section (code inside locks) as short as possible to minimize contention.
  */
 public class CoffeeShop {
     private Queue<String> orderQueue; // Shared order queue
     private final int MAX_ORDERS; // Maximum number of orders the queue can hold
+
+    private final Lock lock = new ReentrantLock(true); // Fair lock
+    private final Condition notFull = lock.newCondition(); // Condition for waiting when the queue is full
+    private final Condition notEmpty = lock.newCondition(); // Condition for waiting when the queue is empty
 
     /**
      * Constructor to initialize the coffee shop with a maximum number of orders.
@@ -29,25 +36,29 @@ public class CoffeeShop {
      *
      * Steps Achieved:
      * 1. If the queue is full, customers wait until space is available (Step 1 in the document).
-     * 2. Ensures mutual exclusion using `synchronized` to avoid race conditions (Step 4 in the document).
+     * 2. Ensures mutual exclusion using `ReentrantLock` to avoid race conditions (Step 4 in the document).
      * 3. Notifies baristas when a new order is added to the queue.
      *
      * Best Practices:
-     * - Use `wait()` inside a loop to handle spurious wakeups.
-     * - Use `notifyAll()` to wake up all waiting threads (baristas in this case).
+     * - Use `await()` and `signalAll()` for thread coordination.
+     * - Always release the lock in a `finally` block to avoid deadlocks.
      *
      * @param order The order to be placed in the queue.
      * @throws InterruptedException If the thread is interrupted while waiting.
      */
     public void placeOrder(String order) throws InterruptedException {
-        synchronized (this) {
+        lock.lock(); // Acquire the lock
+        try {
             // Step 1: If the queue is full, customers must wait until there is space available.
             while (orderQueue.size() >= MAX_ORDERS) {
-                wait(); // Wait for space in the queue
+                System.out.println(Thread.currentThread().getName() + " is waiting to place an order.");
+                notFull.await(); // Wait for space in the queue
             }
             orderQueue.add(order); // Add order to the queue
-            System.out.println("Order placed: " + order);
-            notifyAll(); // Notify baristas that a new order is available
+            System.out.println(Thread.currentThread().getName() + " placed order for " + order);
+            notEmpty.signalAll(); // Notify baristas that a new order is available
+        } finally {
+            lock.unlock(); // Release the lock
         }
     }
 
@@ -56,26 +67,30 @@ public class CoffeeShop {
      *
      * Steps Achieved:
      * 1. If the queue is empty, baristas wait until orders are available (Step 1 in the document).
-     * 2. Ensures mutual exclusion using `synchronized` to avoid race conditions (Step 4 in the document).
+     * 2. Ensures mutual exclusion using `ReentrantLock` to avoid race conditions (Step 4 in the document).
      * 3. Notifies customers when an order is removed from the queue.
      *
      * Best Practices:
-     * - Use `wait()` inside a loop to handle spurious wakeups.
-     * - Use `notifyAll()` to wake up all waiting threads (customers in this case).
+     * - Use `await()` and `signalAll()` for thread coordination.
+     * - Always release the lock in a `finally` block to avoid deadlocks.
      *
      * @return The prepared order.
      * @throws InterruptedException If the thread is interrupted while waiting.
      */
     public String prepareOrder() throws InterruptedException {
-        synchronized (this) {
+        lock.lock(); // Acquire the lock
+        try {
             // Step 1: If the queue is empty, baristas must wait until orders are available.
             while (orderQueue.isEmpty()) {
-                wait(); // Wait for orders to be placed
+                System.out.println(Thread.currentThread().getName() + " is waiting for an order.");
+                notEmpty.await(); // Wait for orders to be placed
             }
             String order = orderQueue.poll(); // Remove and return the next order
-            System.out.println("Order prepared: " + order);
-            notifyAll(); // Notify customers that space is available in the queue
+            System.out.println(Thread.currentThread().getName() + " has prepared " + order);
+            notFull.signalAll(); // Notify customers that space is available in the queue
             return order;
+        } finally {
+            lock.unlock(); // Release the lock
         }
     }
 }

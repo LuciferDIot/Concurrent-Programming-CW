@@ -24,15 +24,18 @@ public class Barista implements Runnable {
     @Override
     public void run() {
         try {
-            // Step 1: Baristas continuously prepare orders from the queue.
-            // If the queue is empty, they wait until orders are available (handled in CoffeeShop.prepareOrder).
-            while (true) {
-                coffeeShop.prepareOrder();
+            // Use `Thread.currentThread().isInterrupted()` to check if the thread has been interrupted
+            while (!Thread.currentThread().isInterrupted()) { // Exit loop when the thread is interrupted
+                coffeeShop.prepareOrder(); // Prepare an order from the queue
                 Thread.sleep(1000); // Simulate time taken to prepare an order
             }
         } catch (InterruptedException e) {
-            System.out.println("Barista was interrupted while preparing an order.");
+            // Handle interruption gracefully
+            System.out.println(Thread.currentThread().getName() + " was interrupted while preparing an order.");
             Thread.currentThread().interrupt(); // Restore the interrupted status
+        } finally {
+            // Cleanup or logging when the thread stops
+            System.out.println(Thread.currentThread().getName() + " is stopping.");
         }
     }
 }

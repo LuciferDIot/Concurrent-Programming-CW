@@ -10,24 +10,39 @@
  * - Ensure the program can handle interruptions gracefully.
  */
 public class CoffeeShopExample {
-    public static void main(String[] args) {
-        // Step 1: Create a coffee shop with a maximum of 5 orders in the queue.
+    public static void main(String[] args) throws InterruptedException {
+        // Creating coffee shop with a maximum of 3 orders in the queue.
         CoffeeShop coffeeShop = new CoffeeShop(3);
 
-        // Step 2: Create and start multiple customer threads.
-        // Each customer places an order in the queue.
+        // Creating and starting multiple customer threads.
         for (int i = 1; i <= 10; i++) {
-            Customer customer = new Customer(coffeeShop, "Coffee Order #" + i);
-            Thread customerThread = new Thread(customer);
+            Customer customer = new Customer(coffeeShop, "coffee order " + i);
+            Thread customerThread = new Thread(customer, "Customer" + i);
             customerThread.start();
         }
 
-        // Step 3: Create and start multiple barista threads.
-        // Each barista prepares orders from the queue.
-        for (int i = 1; i <= 3; i++) {
-            Barista barista = new Barista(coffeeShop);
-            Thread baristaThread = new Thread(barista);
-            baristaThread.start();
+        // Creating and starting multiple barista threads.
+        Barista[] baristas = new Barista[3];
+        Thread[] baristaThreads = new Thread[3];
+        for (int i = 0; i < 3; i++) {
+            baristas[i] = new Barista(coffeeShop);
+            baristaThreads[i] = new Thread(baristas[i], "Barista" + (i + 1));
+            baristaThreads[i].start();
         }
+
+        // Simulate the coffee shop running for 10 seconds
+        Thread.sleep(10000);
+
+        // Stop all barista threads by interrupting them
+        for (Thread baristaThread : baristaThreads) {
+            baristaThread.interrupt(); // Interrupt the barista thread
+        }
+
+        // Wait for all barista threads to finish
+        for (Thread baristaThread : baristaThreads) {
+            baristaThread.join();
+        }
+
+        System.out.println("Coffee shop is now closed.");
     }
 }
