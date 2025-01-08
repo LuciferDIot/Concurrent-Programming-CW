@@ -1,5 +1,4 @@
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.Semaphore;
 
@@ -10,12 +9,12 @@ import java.util.concurrent.Semaphore;
  */
 public class FloorBathroomSimulation {
     public static final int NUM_OF_STALLS = 6;
-    public static Queue<Integer> bathroomStall = new LinkedList<>();
+    public static boolean[] bathroomStall = new boolean[NUM_OF_STALLS]; // Array to track stall availability
     public static final int NUM_USERS = 100;
 
     // Counting semaphore - ensure only 6 people can enter at any given time
     public static final Semaphore semaphore = new Semaphore(NUM_OF_STALLS);
-    // Mutex - to ensure only 1 person can modify the stall queue at a time
+    // Mutex - to ensure only 1 person can modify the stall array at a time
     public static final Semaphore mutex = new Semaphore(1);
 
     /**
@@ -26,8 +25,10 @@ public class FloorBathroomSimulation {
         public void run() {
             enterBathroom();
             int stallNumber = takeStall();
-            useBathroomStall();
-            releaseStall(stallNumber);
+            if (stallNumber != -1) { // Only proceed if a stall was successfully acquired
+                useBathroomStall();
+                releaseStall(stallNumber);
+            }
             leaveBathroom();
         }
 
@@ -44,15 +45,25 @@ public class FloorBathroomSimulation {
         }
 
         /**
-         * Acquires a stall from the queue.
-         * @return The stall number acquired.
+         * Acquires a stall from the array.
+         * @return The stall number acquired, or -1 if no stall is available.
          */
         private int takeStall() {
-            int stallNumber = -1;
+            int stallNumber = -1; // Default value if no stall is available
             try {
                 mutex.acquire();
-                stallNumber = bathroomStall.poll();
-                System.out.println(Thread.currentThread().getName() + " has taken stall " + stallNumber);
+                for (int i = 0; i < NUM_OF_STALLS; i++) {
+                    if (!bathroomStall[i]) { // Check if the stall is available
+                        bathroomStall[i] = true; // Mark the stall as occupied
+                        stallNumber = i + 1; // Stall numbers are 1-based
+                        System.out.println(Thread.currentThread().getName() + " has taken stall " + stallNumber);
+                        System.out.println("Available stalls: " + getAvailableStalls()); // Display available stalls
+                        break;
+                    }
+                }
+                if (stallNumber == -1) {
+                    System.out.println(Thread.currentThread().getName() + " could not find an available stall.");
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } finally {
@@ -63,7 +74,7 @@ public class FloorBathroomSimulation {
 
         /**
          * Simulates the time taken by the user to use the bathroom stall.
-         * Random delay between 3 to 5 seconds is introduced to mimic real usage.
+         * Random delay between 3 and 5 seconds is introduced to mimic real usage.
          */
         private void useBathroomStall() {
             Random random = new Random();
@@ -76,14 +87,15 @@ public class FloorBathroomSimulation {
         }
 
         /**
-         * Releases the stall back to the queue.
+         * Releases the stall back to the array.
          * @param stallNumber The stall number to be released.
          */
         private void releaseStall(int stallNumber) {
             try {
                 mutex.acquire();
-                bathroomStall.add(stallNumber);
+                bathroomStall[stallNumber - 1] = false; // Mark the stall as available
                 System.out.println(Thread.currentThread().getName() + " has released stall " + stallNumber);
+                System.out.println("Available stalls: " + getAvailableStalls()); // Display available stalls
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } finally {
@@ -100,29 +112,51 @@ public class FloorBathroomSimulation {
         }
     }
 
+    /**
+     * Main method to run the simulation.
+     */
     public static void main(String[] args) {
         initializeStalls();
         createAndStartUserThreads();
     }
 
     /**
-     * Initializes the queue with available stalls (1 to 6).
+     * Initializes the array to mark all stalls as available.
      */
     private static void initializeStalls() {
-        for (int i = 1; i <= NUM_OF_STALLS; i++) {
-            bathroomStall.add(i);
-        }
+        // false means the stall is available
+        Arrays.fill(bathroomStall, false);
+        System.out.println("Initial available stalls: " + getAvailableStalls()); // Display initial stalls
     }
 
     /**
      * Creates and starts threads for each user.
      */
     private static void createAndStartUserThreads() {
+        Random random = new Random(); // Initialize the random number generator
         for (int i = 1; i <= NUM_USERS; i++) {
-            // Assign a name to each user as either "Student" or "Employee".
-            String name = (i % 2 == 0) ? "Student " : "Employee ";
+            // Randomly assign a name to each user as either "Student" or "Employee".
+            String name = (random.nextBoolean()) ? "Student " : "Employee ";
             Thread user = new Thread(new BathroomUsers(), name + i);
             user.start();
         }
+    }
+
+    /**
+     * Helper method to get a list of available stalls.
+     * @return A string representation of available stalls.
+     */
+    private static String getAvailableStalls() {
+        StringBuilder availableStalls = new StringBuilder("[");
+        for (int i = 0; i < NUM_OF_STALLS; i++) {
+            if (!bathroomStall[i]) {
+                availableStalls.append(i + 1).append(", ");
+            }
+        }
+        if (availableStalls.length() > 1) {
+            availableStalls.setLength(availableStalls.length() - 2); // Remove the trailing ", "
+        }
+        availableStalls.append("]");
+        return availableStalls.toString();
     }
 }
