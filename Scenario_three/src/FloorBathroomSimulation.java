@@ -23,25 +23,26 @@ public class FloorBathroomSimulation {
     private static class BathroomUsers implements Runnable {
         @Override
         public void run() {
-            enterBathroom();
-            int stallNumber = takeStall();
-            if (stallNumber != -1) { // Only proceed if a stall was successfully acquired
-                useBathroomStall();
-                releaseStall(stallNumber);
+            try {
+                enterBathroom();
+                int stallNumber = takeStall();
+                if (stallNumber != -1) { // Only proceed if a stall was successfully acquired
+                    useBathroomStall();
+                    releaseStall(stallNumber);
+                }
+                leaveBathroom();
+            } catch (InterruptedException e) {
+                System.err.println(Thread.currentThread().getName() + " was interrupted: " + e.getMessage());
+                Thread.currentThread().interrupt(); // Restore the interrupted status
             }
-            leaveBathroom();
         }
 
         /**
          * Attempts to acquire a permit to enter the bathroom.
          */
-        private void enterBathroom() {
-            try {
-                semaphore.acquire();
-                System.out.println(Thread.currentThread().getName() + " has entered the bathroom.");
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        private void enterBathroom() throws InterruptedException {
+            semaphore.acquire();
+            System.out.println(Thread.currentThread().getName() + " has entered the bathroom.");
         }
 
         /**
@@ -65,7 +66,8 @@ public class FloorBathroomSimulation {
                     System.out.println(Thread.currentThread().getName() + " could not find an available stall.");
                 }
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                System.err.println(Thread.currentThread().getName() + " was interrupted while trying to take a stall: " + e.getMessage());
+                Thread.currentThread().interrupt(); // Restore the interrupted status
             } finally {
                 mutex.release();
             }
@@ -82,7 +84,8 @@ public class FloorBathroomSimulation {
             try {
                 Thread.sleep(time * 1000L);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                System.err.println(Thread.currentThread().getName() + " was interrupted while using the stall: " + e.getMessage());
+                Thread.currentThread().interrupt(); // Restore the interrupted status
             }
         }
 
@@ -97,7 +100,8 @@ public class FloorBathroomSimulation {
                 System.out.println(Thread.currentThread().getName() + " has released stall " + stallNumber);
                 System.out.println("Available stalls: " + getAvailableStalls()); // Display available stalls
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                System.err.println(Thread.currentThread().getName() + " was interrupted while releasing a stall: " + e.getMessage());
+                Thread.currentThread().interrupt(); // Restore the interrupted status
             } finally {
                 mutex.release();
             }
