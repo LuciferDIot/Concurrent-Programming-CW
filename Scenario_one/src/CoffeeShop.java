@@ -7,18 +7,13 @@ import java.util.concurrent.locks.Condition;
 /**
  * Represents the coffee shop with a shared order queue.
  * This class ensures thread-safe access to the queue using `ReentrantLock` and `Condition`.
- * <p>
- * Best Practices:
- * - Use `ReentrantLock` for mutual exclusion when accessing shared resources.
- * - Use `Condition` for thread coordination (wait/notify mechanism).
- * - Keep the critical section (code inside locks) as short as possible to minimize contention.
  */
 public class CoffeeShop {
-    private final Queue<String> orderQueue; // Shared order queue
-    private final int MAX_ORDERS; // Maximum number of orders the queue can hold
+    private final Queue<DrinkType> orderQueue; // Shared order queue using DrinkType enum
+    private final int MAX_ORDERS;              // Maximum number of orders the queue can hold
 
-    private final Lock lock = new ReentrantLock(true); // Fair lock
-    private final Condition notFull = lock.newCondition(); // Condition for waiting when the queue is full
+    private final Lock lock = new ReentrantLock(true); // Fair lock for thread synchronization
+    private final Condition notFull = lock.newCondition();  // Condition for waiting when the queue is full
     private final Condition notEmpty = lock.newCondition(); // Condition for waiting when the queue is empty
 
     /**
@@ -33,29 +28,20 @@ public class CoffeeShop {
 
     /**
      * Method for customers to place orders in the queue.
-     * <p>
-     * Steps Achieved:
-     * 1. If the queue is full, customers wait until space is available (Step 1 in the document).
-     * 2. Ensures mutual exclusion using `ReentrantLock` to avoid race conditions (Step 4 in the document).
-     * 3. Notifies baristas when a new order is added to the queue.
-     * <p>
-     * Best Practices:
-     * - Use `await()` and `signalAll()` for thread coordination.
-     * - Always release the lock in a `finally` block to avoid deadlocks.
+     * If the queue is full, customers wait until space is available.
      *
-     * @param order The order to be placed in the queue.
+     * @param drink The drink type to be placed in the queue.
      * @throws InterruptedException If the thread is interrupted while waiting.
      */
-    public void placeOrder(String order) throws InterruptedException {
+    public void placeOrder(DrinkType drink) throws InterruptedException {
         lock.lock(); // Acquire the lock
         try {
-            // Step 1: If the queue is full, customers must wait until there is space available.
             while (orderQueue.size() >= MAX_ORDERS) {
                 System.out.println(Thread.currentThread().getName() + " is waiting to place an order.");
                 notFull.await(); // Wait for space in the queue
             }
-            orderQueue.add(order); // Add order to the queue
-            System.out.println(Thread.currentThread().getName() + " placed order: " + order);
+            orderQueue.add(drink); // Add the drink to the queue
+            System.out.println(Thread.currentThread().getName() + " placed order: " + drink.name().toLowerCase());
             notEmpty.signalAll(); // Notify baristas that a new order is available
         } finally {
             lock.unlock(); // Release the lock
@@ -64,31 +50,22 @@ public class CoffeeShop {
 
     /**
      * Method for baristas to prepare orders from the queue.
-     * <p>
-     * Steps Achieved:
-     * 1. If the queue is empty, baristas wait until orders are available (Step 1 in the document).
-     * 2. Ensures mutual exclusion using `ReentrantLock` to avoid race conditions (Step 4 in the document).
-     * 3. Notifies customers when an order is removed from the queue.
-     * <p>
-     * Best Practices:
-     * - Use `await()` and `signalAll()` for thread coordination.
-     * - Always release the lock in a `finally` block to avoid deadlocks.
+     * If the queue is empty, baristas wait until orders are available.
      *
-     * @return The prepared order.
+     * @return The drink type to be prepared.
      * @throws InterruptedException If the thread is interrupted while waiting.
      */
-    public String prepareOrder() throws InterruptedException {
+    public DrinkType prepareOrder() throws InterruptedException {
         lock.lock(); // Acquire the lock
         try {
-            // Step 1: If the queue is empty, baristas must wait until orders are available.
             while (orderQueue.isEmpty()) {
                 System.out.println(Thread.currentThread().getName() + " is waiting for an order.");
                 notEmpty.await(); // Wait for orders to be placed
             }
-            String order = orderQueue.poll(); // Remove and return the next order
-            System.out.println(Thread.currentThread().getName() + " is preparing: " + order);
+            DrinkType drink = orderQueue.poll(); // Remove and return the next drink
+            System.out.println(Thread.currentThread().getName() + " is preparing: " + drink.name().toLowerCase());
             notFull.signalAll(); // Notify customers that space is available in the queue
-            return order;
+            return drink;
         } finally {
             lock.unlock(); // Release the lock
         }

@@ -1,43 +1,45 @@
 /**
  * Main class to simulate the coffee shop scenario.
- * <p>
- * Steps Achieved:
- * 1. Creates a coffee shop with a limited order queue.
- * 2. Simulates multiple customers placing orders and baristas preparing them.
- * <p>
- * Best Practices:
- * - Use a fixed-size thread pool or limit the number of threads to avoid resource exhaustion.
- * - Ensure the program can handle interruptions gracefully.
+ * This class creates customers, baristas, and the coffee shop, and runs the simulation.
  */
 public class CoffeeShopExample {
+    /**
+     * The main method to start the coffee shop simulation.
+     *
+     * @param args Command-line arguments (not used in this program).
+     * @throws InterruptedException If the main thread is interrupted during execution.
+     */
     public static void main(String[] args) throws InterruptedException {
-        // Creating coffee shop with a maximum of 5 orders in the queue.
+        // Create a coffee shop with a maximum of 5 orders in the queue
         CoffeeShop coffeeShop = new CoffeeShop(5);
 
-        // Creating and starting multiple customer threads.
-        String[] customerNames = {"Alice", "Bob", "Charlie", "Diana", "Eve", "Frank", "Grace", "Hank", "Ivy", "Jack"};
-        for (int i = 0; i < 10; i++) {
-            String order = "a " + (i % 2 == 0 ? "cappuccino" : "latte"); // Alternate between cappuccino and latte
-            Customer customer = new Customer(coffeeShop, customerNames[i] + " ordered " + order);
-            Thread customerThread = new Thread(customer, "Customer-" + customerNames[i]);
-            customerThread.start();
-        }
+        // Define customer orders using the DrinkType enum
+        DrinkType[] aliceOrders = {DrinkType.CAPPUCCINO, DrinkType.LATTE, DrinkType.ESPRESSO};
+        DrinkType[] bobOrders = {DrinkType.LATTE, DrinkType.AMERICANO};
 
-        // Creating and starting multiple barista threads.
-        Barista[] baristas = new Barista[3];
-        Thread[] baristaThreads = new Thread[3];
-        for (int i = 0; i < 3; i++) {
+        // Create and start customer threads
+        Customer alice = new Customer(coffeeShop, aliceOrders);
+        Customer bob = new Customer(coffeeShop, bobOrders);
+        Thread aliceThread = new Thread(alice, "Customer-Alice");
+        Thread bobThread = new Thread(bob, "Customer-Bob");
+        aliceThread.start();
+        bobThread.start();
+
+        // Create and start barista threads
+        Barista[] baristas = new Barista[2];
+        Thread[] baristaThreads = new Thread[2];
+        for (int i = 0; i < 2; i++) {
             baristas[i] = new Barista(coffeeShop);
             baristaThreads[i] = new Thread(baristas[i], "Barista-" + (i + 1));
             baristaThreads[i].start();
         }
 
-        // Simulate the coffee shop running for 20 seconds
-        Thread.sleep(20000);
+        // Simulate the coffee shop running for 30 seconds
+        Thread.sleep(30000);
 
         // Stop all barista threads by interrupting them
         for (Thread baristaThread : baristaThreads) {
-            baristaThread.interrupt(); // Interrupt the barista thread
+            baristaThread.interrupt();
         }
 
         // Wait for all barista threads to finish

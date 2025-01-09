@@ -1,37 +1,35 @@
 /**
- * Represents a customer who places orders in the coffee shop.
- * <p>
- * Steps Achieved:
- * 1. Customers place orders in the queue (Step 1 in the document).
- * 2. If the queue is full, customers wait until space is available (handled in `CoffeeShop.placeOrder`).
- * <p>
- * Best Practices:
- * - Implement `Runnable` to allow the class to be executed in a separate thread.
- * - Handle `InterruptedException` to ensure threads can be interrupted gracefully.
+ * Represents a customer who places multiple orders in the coffee shop.
+ * Each customer can place multiple orders of different drink types.
  */
 public class Customer implements Runnable {
-    private final CoffeeShop coffeeShop;
-    private final String order;
+    private final CoffeeShop coffeeShop; // The coffee shop where orders are placed
+    private final DrinkType[] orders;    // Array of drink types to be ordered by the customer
 
     /**
-     * Constructor to initialize the customer with a coffee shop and an order.
+     * Constructor to initialize the customer with a coffee shop and a list of drink orders.
      *
      * @param coffeeShop The coffee shop where the customer places orders.
-     * @param order The order to be placed.
+     * @param orders     The array of drink types to be ordered by the customer.
      */
-    public Customer(CoffeeShop coffeeShop, String order) {
+    public Customer(CoffeeShop coffeeShop, DrinkType[] orders) {
         this.coffeeShop = coffeeShop;
-        this.order = order;
+        this.orders = orders;
     }
 
+    /**
+     * The run method executed by the customer thread.
+     * It places each order in the queue and waits briefly between orders.
+     */
     @Override
     public void run() {
         try {
-            // Step 1: Customers place orders in the queue.
-            // If the queue is full, they wait until there is space (handled in CoffeeShop.placeOrder).
-            coffeeShop.placeOrder(order);
+            for (DrinkType drink : orders) {
+                coffeeShop.placeOrder(drink); // Place each drink order in the queue
+                Thread.sleep(500); // Simulate a short delay between placing orders
+            }
         } catch (InterruptedException e) {
-            System.out.println("Customer was interrupted while placing an order.");
+            System.out.println(Thread.currentThread().getName() + " was interrupted while placing orders.");
             Thread.currentThread().interrupt(); // Restore the interrupted status
         }
     }

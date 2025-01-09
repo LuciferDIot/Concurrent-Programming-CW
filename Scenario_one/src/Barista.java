@@ -1,19 +1,9 @@
-import java.util.Random;
-
 /**
  * Represents a barista who prepares orders from the queue.
- * <p>
- * Steps Achieved:
- * 1. Baristas prepare orders from the queue (Step 1 in the document).
- * 2. If the queue is empty, baristas wait until orders are available (handled in `CoffeeShop.prepareOrder`).
- * <p>
- * Best Practices:
- * - Implement `Runnable` to allow the class to be executed in a separate thread.
- * - Handle `InterruptedException` to ensure threads can be interrupted gracefully.
+ * Each barista prepares orders based on the drink type and its associated preparation time.
  */
 public class Barista implements Runnable {
-    private final CoffeeShop coffeeShop;
-    private final Random random = new Random();
+    private final CoffeeShop coffeeShop; // The coffee shop where orders are prepared
 
     /**
      * Constructor to initialize the barista with a coffee shop.
@@ -24,21 +14,26 @@ public class Barista implements Runnable {
         this.coffeeShop = coffeeShop;
     }
 
+    /**
+     * The run method executed by the barista thread.
+     * It continuously prepares orders from the queue until interrupted.
+     */
     @Override
     public void run() {
         try {
             while (!Thread.currentThread().isInterrupted()) {
-                String order = coffeeShop.prepareOrder();
-                int preparationTime = random.nextInt(3000) + 1000;
-                Thread.sleep(preparationTime);
-                System.out.println(Thread.currentThread().getName() + " has completed: " + order);
+                DrinkType drink = coffeeShop.prepareOrder(); // Retrieve the next drink from the queue
+                if (drink != null) {
+                    int preparationTime = drink.getPreparationTime(); // Get the preparation time for the drink
+                    System.out.println(Thread.currentThread().getName() + " is preparing: " + drink.name().toLowerCase() + " (Time: " + preparationTime + "ms)");
+                    Thread.sleep(preparationTime); // Simulate the preparation time
+                    System.out.println(Thread.currentThread().getName() + " has completed: " + drink.name().toLowerCase());
+                }
             }
         } catch (InterruptedException e) {
-            // Handle interruption gracefully
             System.out.println(Thread.currentThread().getName() + " is stopping as the coffee shop is closing.");
             Thread.currentThread().interrupt(); // Restore the interrupted status
         } finally {
-            // Cleanup or logging when the thread stops
             System.out.println(Thread.currentThread().getName() + " has left the coffee shop.");
         }
     }
