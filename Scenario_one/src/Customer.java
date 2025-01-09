@@ -1,12 +1,10 @@
-import java.util.Random;
-
 /**
  * Represents a customer who places orders in the coffee shop.
- *
+ * <p>
  * Steps Achieved:
  * 1. Customers place orders in the queue (Step 1 in the document).
  * 2. If the queue is full, customers wait until space is available (handled in `CoffeeShop.placeOrder`).
- *
+ * <p>
  * Best Practices:
  * - Implement `Runnable` to allow the class to be executed in a separate thread.
  * - Handle `InterruptedException` to ensure threads can be interrupted gracefully.
@@ -14,7 +12,6 @@ import java.util.Random;
 public class Customer implements Runnable {
     private final CoffeeShop coffeeShop;
     private final String order;
-    private final Random random = new Random();
 
     /**
      * Constructor to initialize the customer with a coffee shop and an order.
