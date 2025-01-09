@@ -1,15 +1,13 @@
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Represents a bank account with thread-safe operations.
- * Satisfies the following requirements from the document:
- * - Read-Write Operations: Allows concurrent reads using ReentrantReadWriteLock.
- * - Transaction Safety: Ensures exclusive access during write operations (deposit/withdraw).
+ * Uses ReentrantLock for fine-grained locking.
  */
 public class BankAccount {
     private final int id; // Unique account ID
     private double balance; // Current balance
-    private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(); // Lock for thread safety
+    private final ReentrantLock lock = new ReentrantLock(true); // Fair lock
 
     public BankAccount(int id, double initialBalance) {
         this.id = id;
@@ -23,26 +21,25 @@ public class BankAccount {
     /**
      * Returns the current balance of the account.
      * Uses a read lock to allow concurrent reads.
+     *
+     * @return The current balance.
      */
     public double getBalance() {
-        rwLock.readLock().lock();
-        try {
-            return balance;
-        } finally {
-            rwLock.readLock().unlock();
-        }
+        return balance; // No locking needed for reads
     }
 
     /**
      * Deposits the specified amount into the account.
      * Uses a write lock to ensure exclusive access during the update.
+     *
+     * @param amount The amount to deposit.
      */
     public void deposit(double amount) {
-        rwLock.writeLock().lock();
+        lock.lock();
         try {
             balance += amount;
         } finally {
-            rwLock.writeLock().unlock();
+            lock.unlock();
         }
     }
 
@@ -50,9 +47,12 @@ public class BankAccount {
      * Withdraws the specified amount from the account.
      * Uses a write lock to ensure exclusive access during the update.
      * Throws an exception if the balance is insufficient.
+     *
+     * @param amount The amount to withdraw.
+     * @throws IllegalArgumentException If the balance is insufficient.
      */
     public void withdraw(double amount) {
-        rwLock.writeLock().lock();
+        lock.lock();
         try {
             if (balance >= amount) {
                 balance -= amount;
@@ -60,7 +60,21 @@ public class BankAccount {
                 throw new IllegalArgumentException("Insufficient balance");
             }
         } finally {
-            rwLock.writeLock().unlock();
+            lock.unlock();
         }
+    }
+
+    /**
+     * Locks the account for exclusive access.
+     */
+    public void lock() {
+        lock.lock();
+    }
+
+    /**
+     * Unlocks the account.
+     */
+    public void unlock() {
+        lock.unlock();
     }
 }

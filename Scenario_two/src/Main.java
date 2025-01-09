@@ -1,3 +1,7 @@
+/**
+ * The entry point of the program.
+ * Demonstrates the functionality of the TransactionSystem by testing various scenarios with all actions in separate threads.
+ */
 public class Main {
     public static void main(String[] args) {
         TransactionSystem transactionSystem = new TransactionSystem();
@@ -5,85 +9,81 @@ public class Main {
         // Create accounts
         BankAccount account1 = new BankAccount(1, 1000);
         BankAccount account2 = new BankAccount(2, 1000);
+        BankAccount account3 = new BankAccount(3, 1000);
 
         transactionSystem.addAccount(account1);
         transactionSystem.addAccount(account2);
+        transactionSystem.addAccount(account3);
 
         // Print initial balances
         System.out.println("Initial balances:");
-        printBalances(account1, account2);
+        printBalances(account1, account2, account3);
+        System.out.println();
 
-        // Scenario 1: Successful Transfer
-        System.out.println("\nScenario 1: Successful Transfer");
-        System.out.println("Action: Transfer 100 from Account 1 to Account 2");
-        transactionSystem.transfer(1, 2, 100);
-        printBalances(account1, account2);
+        // Scenario 1: Concurrent Transfers
+        Thread thread1 = new Thread(() -> {
+            transactionSystem.transfer(1, 2, 100);
+            System.out.println("Thread 1: Transfer successful!");
+            printBalances(account1, account2, account3);
+            System.out.println();
+        });
 
-        // Scenario 2: Insufficient Balance
-        System.out.println("\nScenario 2: Insufficient Balance");
-        System.out.println("Action: Attempt to transfer 1000 from Account 1 to Account 2 (insufficient balance)");
+        Thread thread2 = new Thread(() -> {
+            transactionSystem.transfer(2, 3, 200);
+            System.out.println("Thread 2: Transfer successful!");
+            printBalances(account1, account2, account3);
+            System.out.println();
+        });
+
+        Thread thread3 = new Thread(() -> {
+            transactionSystem.transfer(3, 1, 50);
+            System.out.println("Thread 3: Transfer successful!");
+            printBalances(account1, account2, account3);
+            System.out.println();
+        });
+
+        // Scenario 2: Reverse Transaction
+        Thread thread4 = new Thread(() -> {
+            try {
+                transactionSystem.reverseTransaction(1, 2, 100);
+                System.out.println("Thread 4: Reversal successful!");
+                printBalances(account1, account2, account3);
+                System.out.println();
+            } catch (IllegalArgumentException e) {
+                System.out.println("Thread 4: Error - " + e.getMessage());
+                printBalances(account1, account2, account3);
+                System.out.println();
+            }
+        });
+
+        // Start all threads together
+        thread1.start();
+        thread2.start();
+        thread3.start();
+        thread4.start();
+
+        // Wait for a short time to allow all threads to complete
         try {
-            transactionSystem.transfer(1, 2, 1000);
-        } catch (IllegalArgumentException e) {
-            System.out.println("Error: " + e.getMessage());
+            Thread.sleep(2000); // Wait for 2 seconds
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
-        printBalances(account1, account2);
 
-        // Scenario 3: Non-Existent Destination Account
-        System.out.println("\nScenario 3: Non-Existent Destination Account");
-        System.out.println("Action: Attempt to transfer 100 from Account 1 to Account 10 (non-existent account)");
-        transactionSystem.transfer(1, 10, 100);
-        printBalances(account1, account2);
-
-        // Scenario 4: Non-Existent Source Account
-        System.out.println("\nScenario 4: Non-Existent Source Account");
-        System.out.println("Action: Attempt to transfer 100 from Account 10 (non-existent account) to Account 2");
-        try {
-            transactionSystem.transfer(10, 2, 100);
-        } catch (IllegalArgumentException e) {
-            System.out.println("Error: " + e.getMessage());
-        }
-        printBalances(account1, account2);
-
-        // Scenario 6: Reverse Non-Existent Transaction
-        System.out.println("\nScenario 5: Reverse Non-Existent Transaction");
-        System.out.println("Action: Attempt to reverse a transfer of 100 from Account 2 to Account 1 (no such transaction exists)");
-        try {
-            transactionSystem.reverseTransaction(2, 1, 100);
-        } catch (IllegalArgumentException e) {
-            System.out.println("Error: " + e.getMessage());
-        }
-        printBalances(account1, account2);
-
-        // Scenario 5: Reverse Transaction
-        System.out.println("\nScenario 6: Reverse Transaction");
-        System.out.println("Action: Reverse the transfer of 100 from Account 1 to Account 2");
-        transactionSystem.reverseTransaction(1, 2, 100);
-        printBalances(account1, account2);
-
-        // Scenario 7: Reverse Transaction with Non-Existent Destination Account
-        System.out.println("\nScenario 7: Reverse Transaction with Non-Existent Destination Account");
-        System.out.println("Action: Attempt to reverse a transaction to Account 10 (non-existent account)");
-        try {
-            transactionSystem.reverseTransaction(1, 10, 100);
-        } catch (IllegalArgumentException e) {
-            System.out.println("Error: " + e.getMessage());
-        }
-        printBalances(account1, account2);
-
-        // Scenario 8: Reverse Transaction with Non-Existent Source Account
-        System.out.println("\nScenario 8: Reverse Transaction with Non-Existent Source Account");
-        System.out.println("Action: Attempt to reverse a transaction from Account 10 (non-existent account) to Account 2");
-        try {
-            transactionSystem.reverseTransaction(10, 2, 100);
-        } catch (IllegalArgumentException e) {
-            System.out.println("Error: " + e.getMessage());
-        }
-        printBalances(account1, account2);
+        // Print final balances after all scenarios
+        System.out.println("Final balances after all scenarios:");
+        printBalances(account1, account2, account3);
     }
 
-    private static void printBalances(BankAccount account1, BankAccount account2) {
+    /**
+     * Prints the balances of the specified accounts.
+     *
+     * @param account1 The first account.
+     * @param account2 The second account.
+     * @param account3 The third account.
+     */
+    private static void printBalances(BankAccount account1, BankAccount account2, BankAccount account3) {
         System.out.println("Account 1: " + account1.getBalance());
         System.out.println("Account 2: " + account2.getBalance());
+        System.out.println("Account 3: " + account3.getBalance());
     }
 }
